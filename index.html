@@ -1,0 +1,1465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Stretch" />
+  <meta name="theme-color" content="#F1ECDC" />
+  <title>Stretch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
+  <style>
+    html, body, #root { margin: 0; padding: 0; min-height: 100vh; background: #F1ECDC; }
+    * { -webkit-tap-highlight-color: transparent; }
+    body { font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; }
+    button { font-family: inherit; }
+    #err {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+      background: #fee; color: #800; padding: 12px 16px;
+      font-family: ui-monospace, Menlo, monospace; font-size: 12px;
+      white-space: pre-wrap; max-height: 50vh; overflow: auto;
+      border-bottom: 2px solid #c00; display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="err"></div>
+  <div id="root"></div>
+  <script>
+    // Surface errors visibly so we can diagnose blank-page issues
+    window.addEventListener("error", function(e) {
+      var el = document.getElementById("err");
+      el.style.display = "block";
+      el.textContent = "Error: " + (e.message || e) + "\n" + (e.filename || "") + ":" + (e.lineno || "") + ":" + (e.colno || "") + (e.error && e.error.stack ? "\n" + e.error.stack : "");
+    });
+    window.addEventListener("unhandledrejection", function(e) {
+      var el = document.getElementById("err");
+      el.style.display = "block";
+      el.textContent = "Unhandled rejection: " + (e.reason && e.reason.message ? e.reason.message : e.reason);
+    });
+  </script>
+  <script type="text/babel" data-presets="react,env">
+const { useState, useEffect, useRef, useCallback, Fragment } = React;
+
+// ---------- Inline lucide-style icons ----------
+const Icon = ({ children, size = 24, strokeWidth = 2, style = {}, fill = "none", ...rest }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill={fill}
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={style}
+    {...rest}
+  >
+    {children}
+  </svg>
+);
+const Pause = (p) => <Icon {...p}><rect x="14" y="4" width="4" height="16" rx="1" /><rect x="6" y="4" width="4" height="16" rx="1" /></Icon>;
+const Play = (p) => <Icon {...p}><polygon points="6 3 20 12 6 21 6 3" /></Icon>;
+const X = (p) => <Icon {...p}><path d="M18 6 6 18" /><path d="m6 6 12 12" /></Icon>;
+const Check = (p) => <Icon {...p}><path d="M20 6 9 17l-5-5" /></Icon>;
+const RotateCcw = (p) => <Icon {...p}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></Icon>;
+const SkipForward = (p) => <Icon {...p}><polygon points="5 4 15 12 5 20 5 4" /><line x1="19" x2="19" y1="5" y2="19" /></Icon>;
+const Sprout = (p) => <Icon {...p}><path d="M7 20h10" /><path d="M10 20c5.5-2.5.8-6.4 3-10" /><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z" /><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z" /></Icon>;
+const Volume2 = (p) => <Icon {...p}><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.384 3.384A.705.705 0 0 0 11 19.298z" /><path d="M16 9a5 5 0 0 1 0 6" /><path d="M19.364 18.364a9 9 0 0 0 0-12.728" /></Icon>;
+
+// ---------- Theme ----------
+const C = {
+  bg: "#F1ECDC",
+  card: "#FBF7E9",
+  cardSoft: "#F7F2DF",
+  text: "#1F1D17",
+  textSoft: "#6E6855",
+  textFaint: "#9C9580",
+  border: "#D9D2BB",
+  borderSoft: "#E5DEC7",
+  green: "#3E6A3D",
+  greenSoft: "#E5EDD3",
+  greenDeep: "#2F5A2E",
+  skipped: "#C8C2AC",
+  skippedFaint: "#A8A290",
+};
+
+// ---------- Routine data ----------
+// Step kinds: "timer" (counts down), "reps" (manual done)
+// Exercise types: "timer", "reps", "alternating" (multi-step), "paired" (warmup -> main)
+
+const routines = {
+  A: {
+    name: "Day A",
+    accent: "Posterior chain & posture · ~8 min",
+    sections: [
+      {
+        title: "Upper Posture",
+        exercises: [
+          {
+            id: "doorway-pec",
+            name: "Doorway Pec Stretch",
+            type: "alternating",
+            meta: "3 sets · 45s per position",
+            steps: [
+              { kind: "timer", duration: 45, name: "Doorway Pec Stretch", side: "Low", hint: "elbows low · open lower chest fibers" },
+              { kind: "timer", duration: 45, name: "Doorway Pec Stretch", side: "Mid", hint: "elbows shoulder-height · main chest" },
+              { kind: "timer", duration: 45, name: "Doorway Pec Stretch", side: "High", hint: "elbows high · upper pec & front delts" },
+            ],
+          },
+          {
+            id: "wall-angels",
+            name: "Wall Angels",
+            type: "alternating",
+            meta: "3 sets · 8 reps each",
+            steps: [
+              { kind: "reps", reps: 8, name: "Wall Angels", hint: "set 1 · slow & honest, full contact" },
+              { kind: "reps", reps: 8, name: "Wall Angels", hint: "set 2 · keep wrists & elbows on the wall" },
+              { kind: "reps", reps: 8, name: "Wall Angels", hint: "set 3 · ribs down, low back flat" },
+            ],
+          },
+          { id: "tspine-roller", name: "Thoracic Extension", sets: 1, type: "timer", duration: 60, hint: "foam roller mid-back · arch slow & breathe" },
+        ],
+      },
+      {
+        title: "Posterior Chain",
+        exercises: [
+          {
+            id: "ehh",
+            name: "Elevated Heel Hamstring",
+            type: "alternating",
+            meta: "2 sets · 60s per side",
+            steps: [
+              { kind: "timer", duration: 60, name: "Elevated Heel Hamstring", side: "L", hint: "soft knee · hinge from hips" },
+              { kind: "timer", duration: 60, name: "Elevated Heel Hamstring", side: "R", hint: "soft knee · hinge from hips" },
+            ],
+          },
+          { id: "ddog", name: "Downward Dog", sets: 1, type: "timer", duration: 60, hint: "press the floor away · long spine" },
+          { id: "wall-pancake-a", name: "Wall Pancake Sit", sets: 1, type: "timer", duration: 60, hint: "legs up the wall, wide · let gravity work" },
+        ],
+      },
+    ],
+  },
+  B: {
+    name: "Day B",
+    accent: "Anterior pelvic tilt fix · ~8 min",
+    sections: [
+      {
+        title: "Glute Activation",
+        exercises: [
+          {
+            id: "glute-bridges",
+            name: "Glute Bridges",
+            type: "alternating",
+            meta: "3 sets · 12 reps each",
+            steps: [
+              { kind: "reps", reps: 12, name: "Glute Bridges", hint: "set 1 · squeeze at the top" },
+              { kind: "reps", reps: 12, name: "Glute Bridges", hint: "set 2 · pause 1s up top" },
+              { kind: "reps", reps: 12, name: "Glute Bridges", hint: "set 3 · drive through heels" },
+            ],
+          },
+        ],
+      },
+      {
+        title: "Hip Mobility",
+        exercises: [
+          { id: "lunge-l", name: "Deep Lunge Hip Stretch", side: "L", sets: 1, type: "timer", duration: 60, hint: "hips low · breathe into the front hip" },
+          { id: "lunge-r", name: "Deep Lunge Hip Stretch", side: "R", sets: 1, type: "timer", duration: 60, hint: "hips low · breathe into the front hip" },
+        ],
+      },
+      {
+        title: "Hip Flexors & Quads",
+        exercises: [
+          { id: "couch-l", name: "Couch Stretch", side: "L", sets: 1, type: "timer", duration: 90, hint: "tuck pelvis · feel the front leg" },
+          { id: "couch-r", name: "Couch Stretch", side: "R", sets: 1, type: "timer", duration: 90, hint: "tuck pelvis · feel the front leg" },
+        ],
+      },
+    ],
+  },
+};
+
+// ---------- Helpers ----------
+const formatTime = (s) => {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m}:${sec.toString().padStart(2, "0")}`;
+};
+
+const exerciseSlots = (ex) =>
+  (ex.type === "alternating" || ex.type === "paired") ? ex.steps.length : ex.sets;
+
+const totalSeconds = (dayKey) => {
+  let total = 0;
+  routines[dayKey].sections.forEach((sec) => {
+    sec.exercises.forEach((ex) => {
+      if (ex.type === "alternating" || ex.type === "paired") {
+        ex.steps.forEach((st) => {
+          if (st.kind === "timer") total += st.duration;
+          else total += 25;
+        });
+      } else if (ex.type === "timer") {
+        total += ex.duration * ex.sets;
+      } else if (ex.type === "reps") {
+        total += 25 * ex.sets;
+      }
+    });
+  });
+  return total;
+};
+
+const totalSlots = (dayKey) =>
+  routines[dayKey].sections.reduce(
+    (a, s) => a + s.exercises.reduce((b, e) => b + exerciseSlots(e), 0),
+    0
+  );
+
+const setKey = (sIdx, eIdx, setIdx) => `${sIdx}-${eIdx}-${setIdx}`;
+
+// ---------- App ----------
+function StretchApp() {
+  const [day, setDay] = useState("A");
+  const [completed, setCompleted] = useState({ A: {}, B: {} });
+  const [active, setActive] = useState(null);
+  const [actionMenu, setActionMenu] = useState(null);
+  const [sessionStarts, setSessionStarts] = useState({ A: null, B: null });
+  const [now, setNow] = useState(Date.now());
+  const [soundOn, setSoundOn] = useState(true);
+  const soundOnRef = useRef(true);
+  soundOnRef.current = soundOn;
+  const audioCtxRef = useRef(null);
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const playBeep = useCallback((freq = 660, dur = 200, vol = 0.18) => {
+    if (!soundOnRef.current) return;
+    try {
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      const ctx = audioCtxRef.current;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = "sine";
+      gain.gain.setValueAtTime(vol, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur / 1000);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + dur / 1000);
+    } catch {}
+  }, []);
+
+  const setStatus = useCallback((a, status) => {
+    if (!a) return;
+    const k = setKey(a.sectionIdx, a.exerciseIdx, a.setIdx);
+    setCompleted((prev) => ({
+      ...prev,
+      [a.day]: { ...prev[a.day], [k]: status },
+    }));
+  }, []);
+
+  const clearStatus = useCallback((a) => {
+    if (!a) return;
+    const k = setKey(a.sectionIdx, a.exerciseIdx, a.setIdx);
+    setCompleted((prev) => {
+      const dayClone = { ...prev[a.day] };
+      delete dayClone[k];
+      return { ...prev, [a.day]: dayClone };
+    });
+  }, []);
+
+  // Timer tick
+  useEffect(() => {
+    if (!active || active.paused || active.mode !== "timer") return;
+    if (active.remaining <= 0) {
+      playBeep(660, 250);
+      setTimeout(() => playBeep(880, 350), 220);
+      setActive({ ...active, mode: "complete" });
+      return;
+    }
+    const t = setTimeout(() => {
+      if (active.remaining <= 4 && active.remaining > 1) playBeep(330, 80, 0.12);
+      setActive((a) => (a ? { ...a, remaining: a.remaining - 1 } : null));
+    }, 1000);
+    return () => clearTimeout(t);
+  }, [active, playBeep]);
+
+  const startSet = (sectionIdx, exerciseIdx, setIdx) => {
+    const ex = routines[day].sections[sectionIdx].exercises[exerciseIdx];
+    if (!sessionStarts[day]) {
+      setSessionStarts((prev) => ({ ...prev, [day]: Date.now() }));
+    }
+    playBeep(720, 130);
+
+    // Resolve actual step config based on exercise type
+    let step;
+    if (ex.type === "alternating" || ex.type === "paired") {
+      step = ex.steps[setIdx];
+      // Paired exercises inherit side label from the parent (L/R)
+      if (ex.type === "paired" && ex.side) {
+        step = { ...step, side: ex.side };
+      }
+    } else if (ex.type === "timer") {
+      step = { kind: "timer", duration: ex.duration, name: ex.name, hint: ex.hint, side: ex.side };
+    } else if (ex.type === "reps") {
+      step = { kind: "reps", reps: ex.reps, name: ex.name, hint: ex.hint, side: ex.side };
+    }
+
+    const base = {
+      day, sectionIdx, exerciseIdx, setIdx,
+      paused: false,
+      displayName: step.name,
+      hint: step.hint,
+      side: step.side,
+    };
+
+    if (step.kind === "timer") {
+      setActive({
+        ...base,
+        mode: "timer",
+        remaining: step.duration,
+        total: step.duration,
+      });
+    } else {
+      setActive({
+        ...base,
+        mode: "reps",
+        reps: step.reps,
+      });
+    }
+  };
+
+  const handleRepsDone = () => {
+    setActive((a) => (a ? { ...a, mode: "complete" } : null));
+    playBeep(720, 200);
+  };
+
+  const handleSkipTimer = () => {
+    setActive((a) => (a ? { ...a, mode: "complete" } : null));
+    playBeep(720, 200);
+  };
+
+  const handleCompleteDismiss = () => {
+    setStatus(active, "done");
+    setActive(null);
+  };
+
+  const togglePause = () =>
+    setActive((a) => (a ? { ...a, paused: !a.paused } : null));
+
+  const closeTimer = () => setActive(null);
+
+  const resetDay = (d) => {
+    setCompleted((prev) => ({ ...prev, [d]: {} }));
+    setSessionStarts((prev) => ({ ...prev, [d]: null }));
+  };
+
+  const openActionMenu = (sectionIdx, exerciseIdx, setIdx) => {
+    setActionMenu({ day, sectionIdx, exerciseIdx, setIdx });
+  };
+
+  const handleSkip = () => {
+    if (actionMenu) {
+      setStatus(actionMenu, "skipped");
+      setActionMenu(null);
+    }
+  };
+
+  const handleResetSet = () => {
+    if (actionMenu) {
+      clearStatus(actionMenu);
+      setActionMenu(null);
+    }
+  };
+
+  return (
+    <div
+      className="min-h-screen w-full"
+      style={{
+        background: C.bg,
+        color: C.text,
+        fontFamily: "'Geist', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif",
+        WebkitFontSmoothing: "antialiased",
+      }}
+    >
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300..700&display=swap');
+        .tabular { font-variant-numeric: tabular-nums; }
+        .grain {
+          background-image: radial-gradient(rgba(31,29,23,0.025) 1px, transparent 1px);
+          background-size: 4px 4px;
+        }
+        @keyframes slideUp {
+          from { transform: translateY(100%); }
+          to { transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes scaleIn {
+          from { transform: scale(0.92); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+        @keyframes softPulse {
+          0%, 100% { opacity: 0.55; }
+          50% { opacity: 1; }
+        }
+        @keyframes gentleSway {
+          0%, 100% { transform: rotate(-4deg); }
+          50% { transform: rotate(4deg); }
+        }
+        @keyframes progressDeplete {
+          from { width: 100%; }
+          to { width: 0%; }
+        }
+      `}</style>
+
+      <WorkoutView
+        day={day}
+        setDay={setDay}
+        completed={completed[day]}
+        onStartSet={startSet}
+        onLongPress={openActionMenu}
+        onResetDay={() => resetDay(day)}
+        sessionStart={sessionStarts[day]}
+        now={now}
+        activeKey={
+          active && active.day === day
+            ? setKey(active.sectionIdx, active.exerciseIdx, active.setIdx)
+            : null
+        }
+      />
+
+      <SoundToggle soundOn={soundOn} onToggle={() => setSoundOn((s) => !s)} />
+
+      {active && active.mode !== "complete" && (
+        <TimerOverlay
+          active={active}
+          onPause={togglePause}
+          onClose={closeTimer}
+          onRepsDone={handleRepsDone}
+          onSkipTimer={handleSkipTimer}
+        />
+      )}
+
+      {actionMenu && !active && (
+        <ActionMenuOverlay
+          menu={actionMenu}
+          completed={completed[actionMenu.day]}
+          onSkip={handleSkip}
+          onReset={handleResetSet}
+          onClose={() => setActionMenu(null)}
+        />
+      )}
+
+      {active && active.mode === "complete" && (
+        <CompleteOverlay onTap={handleCompleteDismiss} />
+      )}
+    </div>
+  );
+}
+
+// ---------- Workout ----------
+function WorkoutView({
+  day, setDay, completed, onStartSet, onLongPress, onResetDay,
+  sessionStart, now, activeKey,
+}) {
+  const r = routines[day];
+  const total = totalSeconds(day);
+  const elapsed = sessionStart ? Math.floor((now - sessionStart) / 1000) : 0;
+  const statuses = Object.values(completed || {});
+  const hasProgress = statuses.length > 0;
+
+  return (
+    <div className="pb-32 grain">
+      <div className="px-6 pt-10 pb-5">
+        <div
+          style={{
+            fontSize: "11px",
+            letterSpacing: "0.3em",
+            textTransform: "uppercase",
+            color: C.textFaint,
+            fontWeight: 500,
+          }}
+        >
+          Daily Practice
+        </div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: "16px",
+            marginTop: "6px",
+          }}
+        >
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div
+              style={{
+                fontSize: "44px", fontWeight: 600,
+                letterSpacing: "-0.035em", color: C.green,
+                lineHeight: 1.05,
+              }}
+            >
+              10m Stretch
+            </div>
+          </div>
+          <div
+            style={{
+              flexShrink: 0,
+              width: "68px",
+              height: "68px",
+              borderRadius: "50%",
+              background: C.greenSoft,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: `1px solid ${C.green}`,
+            }}
+          >
+            <div
+              style={{
+                animation: "gentleSway 4s ease-in-out infinite",
+                transformOrigin: "bottom center",
+                display: "flex",
+              }}
+            >
+              <Sprout
+                size={34}
+                strokeWidth={1.5}
+                style={{ color: C.green }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Day toggle */}
+        <div
+          className="flex gap-1 p-0.5 rounded-full mt-5"
+          style={{
+            background: C.cardSoft,
+            border: `1px solid ${C.borderSoft}`,
+            width: "fit-content",
+          }}
+        >
+          {["A", "B"].map((d) => (
+            <button
+              key={d}
+              onClick={() => setDay(d)}
+              className="px-5 py-1.5 rounded-full transition-all"
+              style={{
+                background: day === d ? C.green : "transparent",
+                color: day === d ? C.card : C.textSoft,
+                fontSize: "13px",
+                fontWeight: day === d ? 600 : 500,
+                letterSpacing: "0.02em",
+              }}
+            >
+              Day {d}
+            </button>
+          ))}
+        </div>
+        <div
+          style={{
+            fontSize: "13px", color: C.textSoft,
+            marginTop: "10px", fontWeight: 400,
+            lineHeight: 1.4,
+          }}
+        >
+          {r.accent}
+        </div>
+
+        <div
+          className="flex items-center gap-2 mt-5"
+          style={{ paddingTop: "12px", borderTop: `1px solid ${C.borderSoft}` }}
+        >
+          <span
+            style={{
+              fontSize: "10px",
+              letterSpacing: "0.22em",
+              textTransform: "uppercase",
+              color: C.textFaint,
+              fontWeight: 600,
+            }}
+          >
+            Session
+          </span>
+          <div
+            className="tabular"
+            style={{
+              fontSize: "20px",
+              fontWeight: 500,
+              color: sessionStart ? C.green : C.textFaint,
+              letterSpacing: "-0.02em",
+              marginLeft: "auto",
+            }}
+          >
+            {formatTime(elapsed)}
+          </div>
+          {hasProgress && (
+            <button
+              onClick={onResetDay}
+              className="rounded-full p-1.5"
+              style={{
+                color: C.textFaint,
+                background: C.cardSoft,
+                border: `1px solid ${C.borderSoft}`,
+                marginLeft: "8px",
+              }}
+              aria-label="Reset day"
+            >
+              <RotateCcw size={13} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="px-4">
+        {r.sections.map((section, sIdx) => (
+          <div key={sIdx} className="mb-6">
+            <div className="flex items-center gap-3 mb-3 px-1">
+              <span
+                className="tabular"
+                style={{
+                  fontSize: "11px", color: C.textFaint,
+                  letterSpacing: "0.18em", fontWeight: 600,
+                }}
+              >
+                0{sIdx + 1}
+              </span>
+              <div
+                style={{
+                  fontSize: "12px", fontWeight: 600, color: C.text,
+                  letterSpacing: "0.18em", textTransform: "uppercase",
+                }}
+              >
+                {section.title}
+              </div>
+              <div style={{ flex: 1, height: "1px", background: C.borderSoft }} />
+            </div>
+
+            <div
+              className="rounded-2xl overflow-hidden"
+              style={{ background: C.card, border: `1px solid ${C.border}` }}
+            >
+              {section.exercises.map((ex, eIdx) => (
+                <ExerciseRow
+                  key={ex.id}
+                  ex={ex}
+                  isLast={eIdx === section.exercises.length - 1}
+                  completed={completed}
+                  sectionIdx={sIdx}
+                  exerciseIdx={eIdx}
+                  activeKey={activeKey}
+                  onStartSet={onStartSet}
+                  onLongPress={onLongPress}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+
+        <div
+          style={{
+            fontSize: "11px", color: C.textFaint,
+            textAlign: "center", marginTop: "8px",
+            fontWeight: 400,
+          }}
+        >
+          tap a circle to start · hold for 2s to skip or reset
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ExerciseRow({
+  ex, isLast, completed, sectionIdx, exerciseIdx,
+  activeKey, onStartSet, onLongPress,
+}) {
+  const slots = exerciseSlots(ex);
+  const isMulti = slots > 1;
+
+  // Inline alternating: render dots on the right side of the row instead of below.
+  // Used for compact alternating exercises (≤4 steps) that fit inline.
+  const isInlineAlternating =
+    ex.type === "alternating" && ex.steps.length <= 4;
+
+  let durationLabel = "";
+  if (ex.type === "timer") durationLabel = `${ex.duration}s`;
+  else if (ex.type === "reps") durationLabel = `${ex.reps}`;
+
+  return (
+    <div
+      className="px-4 py-3"
+      style={{ borderBottom: isLast ? "none" : `1px solid ${C.borderSoft}` }}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div
+            style={{
+              fontSize: "16px", fontWeight: 500, color: C.text,
+              letterSpacing: "-0.005em",
+            }}
+          >
+            {ex.name}
+            {ex.side && (
+              <span
+                style={{
+                  color: C.green, marginLeft: "8px",
+                  fontSize: "13px", fontWeight: 600,
+                }}
+              >
+                · {ex.side}
+              </span>
+            )}
+          </div>
+          {(ex.hint || ex.meta) && (
+            <div
+              style={{
+                fontSize: "12px", color: C.textFaint,
+                marginTop: "3px", fontWeight: 400,
+              }}
+            >
+              {ex.meta || ex.hint}
+            </div>
+          )}
+        </div>
+
+        {!isMulti && ex.type !== "alternating" && ex.type !== "paired" && (
+          <SetCircle
+            label={durationLabel}
+            status={completed[setKey(sectionIdx, exerciseIdx, 0)]}
+            active={activeKey === setKey(sectionIdx, exerciseIdx, 0)}
+            onClick={() => onStartSet(sectionIdx, exerciseIdx, 0)}
+            onLongPress={() => onLongPress(sectionIdx, exerciseIdx, 0)}
+          />
+        )}
+
+        {isInlineAlternating && (
+          <div className="flex gap-2 flex-shrink-0">
+            {ex.steps.map((step, stepIdx) => {
+              const stepLabel = step.kind === "timer" ? `${step.duration}s` : `${step.reps}`;
+              return (
+                <div
+                  key={stepIdx}
+                  style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "5px" }}
+                >
+                  <SetCircle
+                    label={stepLabel}
+                    status={completed[setKey(sectionIdx, exerciseIdx, stepIdx)]}
+                    active={activeKey === setKey(sectionIdx, exerciseIdx, stepIdx)}
+                    onClick={() => onStartSet(sectionIdx, exerciseIdx, stepIdx)}
+                    onLongPress={() => onLongPress(sectionIdx, exerciseIdx, stepIdx)}
+                  />
+                  {step.side && (
+                    <div
+                      style={{
+                        fontSize: "10px",
+                        color: C.textFaint,
+                        fontWeight: 600,
+                        letterSpacing: "0.08em",
+                        lineHeight: 1,
+                        textAlign: "center",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {step.side}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {isMulti && ex.type !== "paired" && !isInlineAlternating && (
+          <span
+            className="tabular flex-shrink-0"
+            style={{
+              fontSize: "13px", color: C.textSoft,
+              letterSpacing: "0.02em", fontWeight: 500,
+            }}
+          >
+            {slots} sets
+          </span>
+        )}
+      </div>
+
+      {/* Multi-set dots (below the row) */}
+      {((ex.type === "alternating" && !isInlineAlternating) || ex.type === "paired") ? (
+        <AlternatingDots
+          ex={ex}
+          completed={completed}
+          sectionIdx={sectionIdx}
+          exerciseIdx={exerciseIdx}
+          activeKey={activeKey}
+          onStartSet={onStartSet}
+          onLongPress={onLongPress}
+        />
+      ) : (
+        isMulti && ex.type !== "alternating" && (
+          <div className="flex gap-2.5 mt-3">
+            {Array.from({ length: slots }).map((_, setIdx) => (
+              <SetCircle
+                key={setIdx}
+                label={durationLabel}
+                status={completed[setKey(sectionIdx, exerciseIdx, setIdx)]}
+                active={activeKey === setKey(sectionIdx, exerciseIdx, setIdx)}
+                onClick={() => onStartSet(sectionIdx, exerciseIdx, setIdx)}
+                onLongPress={() => onLongPress(sectionIdx, exerciseIdx, setIdx)}
+              />
+            ))}
+          </div>
+        )
+      )}
+    </div>
+  );
+}
+
+function AlternatingDots({ ex, completed, sectionIdx, exerciseIdx, activeKey, onStartSet, onLongPress }) {
+  const isPaired = ex.type === "paired";
+  return (
+    <div className="mt-3">
+      <div
+        className="flex gap-2 items-center"
+        style={{ justifyContent: isPaired ? "flex-start" : "center" }}
+      >
+        {ex.steps.map((step, stepIdx) => {
+          const stepLabel = step.kind === "timer" ? `${step.duration}s` : `${step.reps}`;
+          const showLabel = isPaired || !!step.side;
+          const subLabel = isPaired ? step.name : step.side;
+          return (
+            <Fragment key={stepIdx}>
+              {isPaired && stepIdx > 0 && (
+                <span
+                  style={{
+                    color: C.textFaint,
+                    fontSize: "16px",
+                    fontWeight: 400,
+                    margin: "0 2px",
+                    lineHeight: 1,
+                  }}
+                  aria-hidden
+                >
+                  →
+                </span>
+              )}
+              {showLabel ? (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "5px" }}>
+                  <SetCircle
+                    label={stepLabel}
+                    status={completed[setKey(sectionIdx, exerciseIdx, stepIdx)]}
+                    active={activeKey === setKey(sectionIdx, exerciseIdx, stepIdx)}
+                    onClick={() => onStartSet(sectionIdx, exerciseIdx, stepIdx)}
+                    onLongPress={() => onLongPress(sectionIdx, exerciseIdx, stepIdx)}
+                  />
+                  <div
+                    style={{
+                      fontSize: "10px",
+                      color: C.textFaint,
+                      fontWeight: 500,
+                      letterSpacing: "0.06em",
+                      lineHeight: 1.15,
+                      textAlign: "center",
+                      maxWidth: "92px",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {subLabel}
+                  </div>
+                </div>
+              ) : (
+                <SetCircle
+                  label={stepLabel}
+                  status={completed[setKey(sectionIdx, exerciseIdx, stepIdx)]}
+                  active={activeKey === setKey(sectionIdx, exerciseIdx, stepIdx)}
+                  onClick={() => onStartSet(sectionIdx, exerciseIdx, stepIdx)}
+                  onLongPress={() => onLongPress(sectionIdx, exerciseIdx, stepIdx)}
+                />
+              )}
+            </Fragment>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function SetCircle({ status, active, label, onClick, onLongPress }) {
+  const [pressing, setPressing] = useState(false);
+  const pressTimerRef = useRef(null);
+  const firedRef = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      if (pressTimerRef.current) clearTimeout(pressTimerRef.current);
+    };
+  }, []);
+
+  const handlePressStart = (e) => {
+    e.preventDefault();
+    firedRef.current = false;
+    setPressing(true);
+    pressTimerRef.current = setTimeout(() => {
+      firedRef.current = true;
+      setPressing(false);
+      onLongPress?.();
+    }, 2000);
+  };
+
+  const handlePressEnd = () => {
+    setPressing(false);
+    if (pressTimerRef.current) {
+      clearTimeout(pressTimerRef.current);
+      pressTimerRef.current = null;
+    }
+  };
+
+  const handleClick = () => {
+    if (firedRef.current) {
+      firedRef.current = false;
+      return;
+    }
+    onClick?.();
+  };
+
+  let bg = "transparent";
+  let border = `1.5px solid ${C.border}`;
+  let color = C.textSoft;
+  let content = label != null ? label : "";
+
+  if (active) {
+    bg = C.green;
+    border = `1.5px solid ${C.green}`;
+    color = C.card;
+  } else if (status === "done") {
+    bg = C.greenSoft;
+    border = `1.5px solid ${C.green}`;
+    color = C.green;
+    content = <Check size={16} strokeWidth={2.5} />;
+  } else if (status === "skipped") {
+    bg = C.skipped;
+    border = `1.5px solid ${C.skippedFaint}`;
+    color = C.skippedFaint;
+  }
+
+  return (
+    <button
+      onClick={handleClick}
+      onPointerDown={handlePressStart}
+      onPointerUp={handlePressEnd}
+      onPointerLeave={handlePressEnd}
+      onPointerCancel={handlePressEnd}
+      className="rounded-full flex items-center justify-center tabular"
+      style={{
+        width: "42px", height: "42px",
+        background: bg, border, color,
+        fontSize: "12px", fontWeight: 600, flexShrink: 0,
+        letterSpacing: "-0.01em",
+        transform: pressing ? "scale(1.25)" : "scale(1)",
+        transition: pressing
+          ? "transform 2000ms ease-out, background 200ms ease"
+          : "transform 220ms cubic-bezier(0.32, 0.72, 0, 1), background 200ms ease",
+        userSelect: "none",
+        touchAction: "manipulation",
+      }}
+    >
+      {content}
+    </button>
+  );
+}
+
+// ---------- Timer Overlay ----------
+function TimerOverlay({ active, onPause, onClose, onRepsDone, onSkipTimer }) {
+  const ex = routines[active.day].sections[active.sectionIdx].exercises[active.exerciseIdx];
+
+  let setLabel;
+  if (ex.type === "alternating") {
+    const currentStep = ex.steps[active.setIdx];
+    let pos = 0, total = 0;
+    ex.steps.forEach((s, i) => {
+      if (s.kind === currentStep.kind) {
+        total++;
+        if (i <= active.setIdx) pos++;
+      }
+    });
+    setLabel = `Set ${pos} of ${total}`;
+  } else if (ex.type === "paired") {
+    setLabel = active.setIdx === 0 ? "Warmup" : "Main stretch";
+  } else if (ex.sets > 1) {
+    setLabel = `Set ${active.setIdx + 1} of ${ex.sets}`;
+  }
+
+  const isReps = active.mode === "reps";
+  const progress =
+    !isReps && active.total > 0
+      ? ((active.total - active.remaining) / active.total) * 100
+      : 0;
+
+  return (
+    <div
+      style={{
+        position: "fixed", bottom: 0, left: 0, right: 0,
+        background: C.card,
+        borderTop: `1px solid ${C.border}`,
+        boxShadow: "0 -8px 32px rgba(31,29,23,0.08)",
+        zIndex: 50,
+        animation: "slideUp 280ms cubic-bezier(0.32, 0.72, 0, 1)",
+      }}
+    >
+      <div
+        style={{
+          height: "2px", background: C.borderSoft,
+          position: "relative", overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            height: "100%", width: `${progress}%`, background: C.green,
+            transition: "width 1000ms linear",
+          }}
+        />
+      </div>
+
+      <div className="px-6 pt-4 pb-6">
+        <div className="flex items-start justify-between mb-2">
+          <div style={{ flex: 1 }}>
+            {setLabel && (
+              <div
+                style={{
+                  fontSize: "11px", color: C.textFaint,
+                  letterSpacing: "0.18em", textTransform: "uppercase",
+                  marginBottom: "5px", fontWeight: 600,
+                }}
+              >
+                {setLabel}
+              </div>
+            )}
+            <div
+              style={{
+                fontSize: "22px", fontWeight: 600, color: C.text,
+                letterSpacing: "-0.015em", lineHeight: 1.15,
+              }}
+            >
+              {active.displayName}
+              {active.side && (
+                <span
+                  style={{
+                    color: C.green, marginLeft: "8px", fontSize: "18px",
+                  }}
+                >
+                  · {active.side}
+                </span>
+              )}
+            </div>
+            {active.hint && (
+              <div
+                style={{
+                  fontSize: "12px", color: C.textSoft,
+                  marginTop: "4px", fontWeight: 400,
+                }}
+              >
+                {active.hint}
+              </div>
+            )}
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-full p-1.5 -mt-1 -mr-1"
+            style={{ color: C.textFaint }}
+            aria-label="Close"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {!isReps ? (
+          <>
+            <div className="flex items-center justify-between mt-4">
+              <div
+                className="tabular"
+                style={{
+                  fontSize: "68px", fontWeight: 300, lineHeight: 1,
+                  letterSpacing: "-0.04em", color: C.text,
+                }}
+              >
+                {formatTime(active.remaining)}
+              </div>
+              <button
+                onClick={onPause}
+                className="rounded-full flex items-center justify-center transition-all active:scale-95"
+                style={{
+                  width: "60px", height: "60px",
+                  background: C.green, color: C.card,
+                }}
+                aria-label={active.paused ? "Resume" : "Pause"}
+              >
+                {active.paused ? (
+                  <Play size={24} fill={C.card} style={{ marginLeft: 2 }} />
+                ) : (
+                  <Pause size={24} fill={C.card} />
+                )}
+              </button>
+            </div>
+            <div style={{ display: "flex", justifyContent: "center", marginTop: "14px" }}>
+              <button
+                onClick={onSkipTimer}
+                className="px-4 py-2 flex items-center gap-2 rounded-full transition-all active:scale-95"
+                style={{
+                  background: "transparent",
+                  border: `1px solid ${C.borderSoft}`,
+                  color: C.textSoft,
+                  fontSize: "11px",
+                  fontWeight: 500,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                }}
+              >
+                <SkipForward size={12} strokeWidth={2.2} />
+                skip · mark complete
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="mt-3">
+            <button
+              onClick={onRepsDone}
+              className="w-full rounded-xl py-4 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+              style={{
+                background: C.green, color: C.card,
+                fontSize: "15px", fontWeight: 600, letterSpacing: "0.02em",
+              }}
+            >
+              <Check size={18} strokeWidth={2.5} />
+              Done · {active.reps} reps complete
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------- Action Menu ----------
+function ActionMenuOverlay({ menu, completed, onSkip, onReset, onClose }) {
+  const ex = routines[menu.day].sections[menu.sectionIdx].exercises[menu.exerciseIdx];
+  let setLabel = null;
+  let displayName = ex.name;
+  let side = ex.side;
+
+  if (ex.type === "alternating") {
+    const step = ex.steps[menu.setIdx];
+    displayName = step.name;
+    let pos = 0, total = 0;
+    ex.steps.forEach((s, i) => {
+      if (s.kind === step.kind) {
+        total++;
+        if (i <= menu.setIdx) pos++;
+      }
+    });
+    setLabel = `Set ${pos} of ${total}`;
+  } else if (ex.type === "paired") {
+    const step = ex.steps[menu.setIdx];
+    displayName = step.name;
+    setLabel = menu.setIdx === 0 ? "Warmup" : "Main stretch";
+  } else if (ex.sets > 1) {
+    setLabel = `Set ${menu.setIdx + 1} of ${ex.sets}`;
+  }
+
+  const k = setKey(menu.sectionIdx, menu.exerciseIdx, menu.setIdx);
+  const status = completed[k];
+  const isEmpty = !status;
+
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0, zIndex: 60,
+        animation: "fadeIn 180ms ease-out",
+      }}
+    >
+      <div
+        onClick={onClose}
+        style={{
+          position: "absolute", inset: 0,
+          background: "rgba(31,29,23,0.4)",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute", bottom: 0, left: 0, right: 0,
+          background: C.card,
+          borderTop: `1px solid ${C.border}`,
+          borderRadius: "20px 20px 0 0",
+          boxShadow: "0 -8px 32px rgba(31,29,23,0.12)",
+          animation: "slideUp 280ms cubic-bezier(0.32, 0.72, 0, 1)",
+        }}
+      >
+        <div
+          style={{
+            width: "36px", height: "4px", background: C.border,
+            borderRadius: "2px", margin: "10px auto 4px",
+          }}
+        />
+        <div className="px-6 pt-3 pb-2">
+          {setLabel && (
+            <div
+              style={{
+                fontSize: "11px", color: C.textFaint,
+                letterSpacing: "0.18em", textTransform: "uppercase",
+                marginBottom: "4px", fontWeight: 600,
+              }}
+            >
+              {setLabel}
+            </div>
+          )}
+          <div
+            style={{
+              fontSize: "20px", fontWeight: 600, color: C.text,
+              letterSpacing: "-0.01em", lineHeight: 1.2,
+            }}
+          >
+            {displayName}
+            {side && (
+              <span style={{ color: C.green, marginLeft: "8px", fontSize: "16px" }}>
+                · {side}
+              </span>
+            )}
+          </div>
+          <div
+            style={{
+              fontSize: "12px", color: C.textSoft,
+              marginTop: "4px", fontWeight: 400,
+            }}
+          >
+            currently{" "}
+            {status === "done"
+              ? "marked complete"
+              : status === "skipped"
+              ? "marked skipped"
+              : "not started"}
+          </div>
+        </div>
+
+        <div className="px-4 pt-3 pb-3 space-y-2">
+          <ActionButton
+            disabled={status === "skipped"}
+            icon={<SkipForward size={18} strokeWidth={2.2} />}
+            label="Skip"
+            sub="mark as skipped"
+            onClick={onSkip}
+          />
+          <ActionButton
+            disabled={isEmpty}
+            icon={<RotateCcw size={18} strokeWidth={2.2} />}
+            label="Reset"
+            sub="clear this set"
+            onClick={onReset}
+          />
+        </div>
+
+        <div className="px-4 pb-6">
+          <button
+            onClick={onClose}
+            className="w-full rounded-xl py-3 transition-all active:scale-[0.98]"
+            style={{
+              background: "transparent",
+              border: `1px solid ${C.border}`,
+              color: C.textSoft,
+              fontSize: "14px", fontWeight: 500, letterSpacing: "0.02em",
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ActionButton({ icon, label, sub, onClick, disabled }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="w-full rounded-xl px-4 py-3 flex items-center gap-4 transition-all active:scale-[0.98]"
+      style={{
+        background: C.cardSoft,
+        border: `1px solid ${C.borderSoft}`,
+        opacity: disabled ? 0.4 : 1,
+        cursor: disabled ? "not-allowed" : "pointer",
+        textAlign: "left",
+      }}
+    >
+      <div
+        className="rounded-full flex items-center justify-center flex-shrink-0"
+        style={{
+          width: "40px", height: "40px",
+          background: C.greenSoft, color: C.green,
+        }}
+      >
+        {icon}
+      </div>
+      <div style={{ flex: 1 }}>
+        <div
+          style={{
+            fontSize: "15px", fontWeight: 600, color: C.text,
+            letterSpacing: "-0.005em",
+          }}
+        >
+          {label}
+        </div>
+        <div
+          style={{
+            fontSize: "12px", color: C.textSoft,
+            marginTop: "1px", fontWeight: 400,
+          }}
+        >
+          {sub}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+// ---------- Sound Toggle ----------
+function SoundToggle({ soundOn, onToggle }) {
+  return (
+    <button
+      onClick={onToggle}
+      aria-label={soundOn ? "Mute sound" : "Unmute sound"}
+      style={{
+        position: "fixed",
+        top: "12px",
+        right: "12px",
+        width: "40px",
+        height: "40px",
+        borderRadius: "50%",
+        background: C.cardSoft,
+        border: `1px solid ${C.borderSoft}`,
+        color: C.textSoft,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 55,
+        cursor: "pointer",
+      }}
+    >
+      <div style={{ position: "relative", display: "inline-flex" }}>
+        <Volume2
+          size={18}
+          strokeWidth={2}
+          style={{ opacity: soundOn ? 1 : 0.45 }}
+        />
+        {!soundOn && (
+          <X
+            size={22}
+            strokeWidth={2.6}
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              color: C.text,
+            }}
+          />
+        )}
+      </div>
+    </button>
+  );
+}
+
+// ---------- Complete Overlay ----------
+function CompleteOverlay({ onTap }) {
+  const onTapRef = useRef(onTap);
+  onTapRef.current = onTap;
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      onTapRef.current();
+    }, 10000);
+    return () => clearTimeout(t);
+  }, []);
+
+  return (
+    <div
+      onClick={onTap}
+      style={{
+        position: "fixed", inset: 0, background: C.green,
+        zIndex: 100,
+        display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center",
+        cursor: "pointer",
+        animation: "fadeIn 220ms ease-out",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          top: 0, left: 0, right: 0,
+          height: "2px",
+          background: "rgba(255,255,255,0.15)",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            height: "100%",
+            width: "100%",
+            background: "rgba(255,255,255,0.6)",
+            animation: "progressDeplete 10s linear forwards",
+          }}
+        />
+      </div>
+      <div
+        style={{
+          textAlign: "center", color: "#FFFFFF",
+          animation: "scaleIn 320ms cubic-bezier(0.32, 0.72, 0, 1)",
+        }}
+      >
+        <Check
+          size={64}
+          strokeWidth={2.5}
+          style={{ margin: "0 auto", marginBottom: "20px", opacity: 0.95 }}
+        />
+        <div
+          style={{
+            fontSize: "72px", fontWeight: 600,
+            letterSpacing: "-0.04em", lineHeight: 1,
+          }}
+        >
+          complete
+        </div>
+        <div
+          style={{
+            fontSize: "12px", marginTop: "28px",
+            letterSpacing: "0.25em", textTransform: "uppercase",
+            fontWeight: 500, animation: "softPulse 2s ease-in-out infinite",
+          }}
+        >
+          tap to continue
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<StretchApp />);
+  </script>
+</body>
+</html>
