@@ -1,79 +1,5 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="Stretch" />
-  <meta name="theme-color" content="#F1ECDC" />
-  <title>Stretch</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&display=swap" rel="stylesheet" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
-  <style>
-    html, body, #root { margin: 0; padding: 0; min-height: 100vh; background: #F1ECDC; }
-    * { -webkit-tap-highlight-color: transparent; }
-    body { font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; }
-    button { font-family: inherit; }
-    #err {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
-      background: #fee; color: #800; padding: 12px 16px;
-      font-family: ui-monospace, Menlo, monospace; font-size: 12px;
-      white-space: pre-wrap; max-height: 50vh; overflow: auto;
-      border-bottom: 2px solid #c00; display: none;
-    }
-  </style>
-</head>
-<body>
-  <div id="err"></div>
-  <div id="root"></div>
-  <script>
-    // Surface errors visibly so we can diagnose blank-page issues
-    window.addEventListener("error", function(e) {
-      var el = document.getElementById("err");
-      el.style.display = "block";
-      el.textContent = "Error: " + (e.message || e) + "\n" + (e.filename || "") + ":" + (e.lineno || "") + ":" + (e.colno || "") + (e.error && e.error.stack ? "\n" + e.error.stack : "");
-    });
-    window.addEventListener("unhandledrejection", function(e) {
-      var el = document.getElementById("err");
-      el.style.display = "block";
-      el.textContent = "Unhandled rejection: " + (e.reason && e.reason.message ? e.reason.message : e.reason);
-    });
-  </script>
-  <script type="text/babel" data-presets="react,env">
-const { useState, useEffect, useRef, useCallback, Fragment } = React;
-
-// ---------- Inline lucide-style icons ----------
-const Icon = ({ children, size = 24, strokeWidth = 2, style = {}, fill = "none", ...rest }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill={fill}
-    stroke="currentColor"
-    strokeWidth={strokeWidth}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    style={style}
-    {...rest}
-  >
-    {children}
-  </svg>
-);
-const Pause = (p) => <Icon {...p}><rect x="14" y="4" width="4" height="16" rx="1" /><rect x="6" y="4" width="4" height="16" rx="1" /></Icon>;
-const Play = (p) => <Icon {...p}><polygon points="6 3 20 12 6 21 6 3" /></Icon>;
-const X = (p) => <Icon {...p}><path d="M18 6 6 18" /><path d="m6 6 12 12" /></Icon>;
-const Check = (p) => <Icon {...p}><path d="M20 6 9 17l-5-5" /></Icon>;
-const RotateCcw = (p) => <Icon {...p}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></Icon>;
-const SkipForward = (p) => <Icon {...p}><polygon points="5 4 15 12 5 20 5 4" /><line x1="19" x2="19" y1="5" y2="19" /></Icon>;
-const Sprout = (p) => <Icon {...p}><path d="M7 20h10" /><path d="M10 20c5.5-2.5.8-6.4 3-10" /><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z" /><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z" /></Icon>;
-const Volume2 = (p) => <Icon {...p}><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.384 3.384A.705.705 0 0 0 11 19.298z" /><path d="M16 9a5 5 0 0 1 0 6" /><path d="M19.364 18.364a9 9 0 0 0 0-12.728" /></Icon>;
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Pause, Play, X, Check, RotateCcw, SkipForward, Volume2 } from "lucide-react";
 
 // ---------- Theme ----------
 const C = {
@@ -87,104 +13,41 @@ const C = {
   borderSoft: "#E5DEC7",
   green: "#3E6A3D",
   greenSoft: "#E5EDD3",
-  greenDeep: "#2F5A2E",
   skipped: "#C8C2AC",
   skippedFaint: "#A8A290",
 };
 
-// ---------- Routine data ----------
-// Step kinds: "timer" (counts down), "reps" (manual done)
-// Exercise types: "timer", "reps", "alternating" (multi-step), "paired" (warmup -> main)
-
-const routines = {
-  A: {
-    name: "Day A",
-    accent: "Posterior chain & posture · ~8 min",
-    sections: [
-      {
-        title: "Upper Posture",
-        exercises: [
-          {
-            id: "doorway-pec",
-            name: "Doorway Pec Stretch",
-            type: "alternating",
-            meta: "3 sets · 45s per position",
-            steps: [
-              { kind: "timer", duration: 45, name: "Doorway Pec Stretch", side: "Low", hint: "elbows low · open lower chest fibers" },
-              { kind: "timer", duration: 45, name: "Doorway Pec Stretch", side: "Mid", hint: "elbows shoulder-height · main chest" },
-              { kind: "timer", duration: 45, name: "Doorway Pec Stretch", side: "High", hint: "elbows high · upper pec & front delts" },
-            ],
-          },
-          {
-            id: "wall-angels",
-            name: "Wall Angels",
-            type: "alternating",
-            meta: "3 sets · 8 reps each",
-            steps: [
-              { kind: "reps", reps: 8, name: "Wall Angels", hint: "set 1 · slow & honest, full contact" },
-              { kind: "reps", reps: 8, name: "Wall Angels", hint: "set 2 · keep wrists & elbows on the wall" },
-              { kind: "reps", reps: 8, name: "Wall Angels", hint: "set 3 · ribs down, low back flat" },
-            ],
-          },
-          { id: "tspine-roller", name: "Thoracic Extension", sets: 1, type: "timer", duration: 60, hint: "foam roller mid-back · arch slow & breathe" },
-        ],
-      },
-      {
-        title: "Posterior Chain",
-        exercises: [
-          {
-            id: "ehh",
-            name: "Elevated Heel Hamstring",
-            type: "alternating",
-            meta: "2 sets · 60s per side",
-            steps: [
-              { kind: "timer", duration: 60, name: "Elevated Heel Hamstring", side: "L", hint: "soft knee · hinge from hips" },
-              { kind: "timer", duration: 60, name: "Elevated Heel Hamstring", side: "R", hint: "soft knee · hinge from hips" },
-            ],
-          },
-          { id: "ddog", name: "Downward Dog", sets: 1, type: "timer", duration: 60, hint: "press the floor away · long spine" },
-          { id: "wall-pancake-a", name: "Wall Pancake Sit", sets: 1, type: "timer", duration: 60, hint: "legs up the wall, wide · let gravity work" },
-        ],
-      },
+// ---------- Routine ----------
+// Three "problems," each with ordered exercises.
+// kind: "timer" (counts down), "reps" (manual done), "lr" (timed L then R)
+// optional: true means it can be hidden/shown via toggle
+const routine = [
+  {
+    id: "strength",
+    title: "Strength",
+    exercises: [
+      { id: "hanging-raises", name: "Hanging Ab Raises", kind: "reps", reps: 10, hint: "strict · curl pelvis up at the top" },
+      { id: "bridges", name: "Weighted Glute Bridges", kind: "reps", reps: 20, hint: "drive through heels · squeeze hard" },
+      { id: "face-pulls", name: "Face Pulls", kind: "reps", reps: 20, hint: "elbows lead · hands to ears" },
+      { id: "chin-tucks", name: "Banded Chin Tucks", kind: "reps", reps: 20, hint: "head straight back · 2s hold each rep" },
     ],
   },
-  B: {
-    name: "Day B",
-    accent: "Anterior pelvic tilt fix · ~8 min",
-    sections: [
+  {
+    id: "stretch",
+    title: "Stretch",
+    exercises: [
+      { id: "chest-opener", name: "Chest Opener", kind: "timer", duration: 60, hint: "foam roller · or doorway if no roller" },
       {
-        title: "Glute Activation",
-        exercises: [
-          {
-            id: "glute-bridges",
-            name: "Glute Bridges",
-            type: "alternating",
-            meta: "3 sets · 12 reps each",
-            steps: [
-              { kind: "reps", reps: 12, name: "Glute Bridges", hint: "set 1 · squeeze at the top" },
-              { kind: "reps", reps: 12, name: "Glute Bridges", hint: "set 2 · pause 1s up top" },
-              { kind: "reps", reps: 12, name: "Glute Bridges", hint: "set 3 · drive through heels" },
-            ],
-          },
-        ],
+        id: "lunge-warmup",
+        name: "Deep Lunge",
+        kind: "lr",
+        duration: 60,
+        hint: "hips low · breathe into the front hip",
       },
-      {
-        title: "Hip Mobility",
-        exercises: [
-          { id: "lunge-l", name: "Deep Lunge Hip Stretch", side: "L", sets: 1, type: "timer", duration: 60, hint: "hips low · breathe into the front hip" },
-          { id: "lunge-r", name: "Deep Lunge Hip Stretch", side: "R", sets: 1, type: "timer", duration: 60, hint: "hips low · breathe into the front hip" },
-        ],
-      },
-      {
-        title: "Hip Flexors & Quads",
-        exercises: [
-          { id: "couch-l", name: "Couch Stretch", side: "L", sets: 1, type: "timer", duration: 90, hint: "tuck pelvis · feel the front leg" },
-          { id: "couch-r", name: "Couch Stretch", side: "R", sets: 1, type: "timer", duration: 90, hint: "tuck pelvis · feel the front leg" },
-        ],
-      },
+      { id: "couch", name: "Couch Stretch", kind: "lr", duration: 60, hint: "tuck pelvis · feel the front leg" },
     ],
   },
-};
+];
 
 // ---------- Helpers ----------
 const formatTime = (s) => {
@@ -193,44 +56,31 @@ const formatTime = (s) => {
   return `${m}:${sec.toString().padStart(2, "0")}`;
 };
 
-const exerciseSlots = (ex) =>
-  (ex.type === "alternating" || ex.type === "paired") ? ex.steps.length : ex.sets;
+const slotsFor = (ex) => (ex.kind === "lr" ? 2 : 1);
 
-const totalSeconds = (dayKey) => {
+const totalSeconds = (showOptional) => {
   let total = 0;
-  routines[dayKey].sections.forEach((sec) => {
+  routine.forEach((sec) => {
     sec.exercises.forEach((ex) => {
-      if (ex.type === "alternating" || ex.type === "paired") {
-        ex.steps.forEach((st) => {
-          if (st.kind === "timer") total += st.duration;
-          else total += 25;
-        });
-      } else if (ex.type === "timer") {
-        total += ex.duration * ex.sets;
-      } else if (ex.type === "reps") {
-        total += 25 * ex.sets;
-      }
+      if (ex.optional && !showOptional) return;
+      if (ex.kind === "lr") total += ex.duration * 2;
+      else if (ex.kind === "timer") total += ex.duration;
+      else if (ex.kind === "reps") total += Math.max(15, ex.reps * 2);
     });
   });
   return total;
 };
 
-const totalSlots = (dayKey) =>
-  routines[dayKey].sections.reduce(
-    (a, s) => a + s.exercises.reduce((b, e) => b + exerciseSlots(e), 0),
-    0
-  );
-
-const setKey = (sIdx, eIdx, setIdx) => `${sIdx}-${eIdx}-${setIdx}`;
+const setKey = (sIdx, eIdx, slotIdx) => `${sIdx}-${eIdx}-${slotIdx}`;
 
 // ---------- App ----------
-function StretchApp() {
-  const [day, setDay] = useState("A");
-  const [completed, setCompleted] = useState({ A: {}, B: {} });
-  const [active, setActive] = useState(null);
+export default function App() {
+  const [completed, setCompleted] = useState({});
+  const [active, setActive] = useState(null); // { sectionIdx, exerciseIdx, slotIdx, mode, remaining, total, paused }
   const [actionMenu, setActionMenu] = useState(null);
-  const [sessionStarts, setSessionStarts] = useState({ A: null, B: null });
+  const [sessionStart, setSessionStart] = useState(null);
   const [now, setNow] = useState(Date.now());
+  const [showOptional, setShowOptional] = useState(false);
   const [soundOn, setSoundOn] = useState(true);
   const soundOnRef = useRef(true);
   soundOnRef.current = soundOn;
@@ -261,25 +111,6 @@ function StretchApp() {
     } catch {}
   }, []);
 
-  const setStatus = useCallback((a, status) => {
-    if (!a) return;
-    const k = setKey(a.sectionIdx, a.exerciseIdx, a.setIdx);
-    setCompleted((prev) => ({
-      ...prev,
-      [a.day]: { ...prev[a.day], [k]: status },
-    }));
-  }, []);
-
-  const clearStatus = useCallback((a) => {
-    if (!a) return;
-    const k = setKey(a.sectionIdx, a.exerciseIdx, a.setIdx);
-    setCompleted((prev) => {
-      const dayClone = { ...prev[a.day] };
-      delete dayClone[k];
-      return { ...prev, [a.day]: dayClone };
-    });
-  }, []);
-
   // Timer tick
   useEffect(() => {
     if (!active || active.paused || active.mode !== "timer") return;
@@ -296,48 +127,47 @@ function StretchApp() {
     return () => clearTimeout(t);
   }, [active, playBeep]);
 
-  const startSet = (sectionIdx, exerciseIdx, setIdx) => {
-    const ex = routines[day].sections[sectionIdx].exercises[exerciseIdx];
-    if (!sessionStarts[day]) {
-      setSessionStarts((prev) => ({ ...prev, [day]: Date.now() }));
-    }
+  const markDone = (a) => {
+    if (!a) return;
+    const k = setKey(a.sectionIdx, a.exerciseIdx, a.slotIdx);
+    setCompleted((prev) => ({ ...prev, [k]: "done" }));
+  };
+
+  const markSkipped = (a) => {
+    if (!a) return;
+    const k = setKey(a.sectionIdx, a.exerciseIdx, a.slotIdx);
+    setCompleted((prev) => ({ ...prev, [k]: "skipped" }));
+  };
+
+  const clearStatus = (a) => {
+    if (!a) return;
+    const k = setKey(a.sectionIdx, a.exerciseIdx, a.slotIdx);
+    setCompleted((prev) => {
+      const clone = { ...prev };
+      delete clone[k];
+      return clone;
+    });
+  };
+
+  const startSlot = (sectionIdx, exerciseIdx, slotIdx) => {
+    const ex = routine[sectionIdx].exercises[exerciseIdx];
+    if (!sessionStart) setSessionStart(Date.now());
     playBeep(720, 130);
 
-    // Resolve actual step config based on exercise type
-    let step;
-    if (ex.type === "alternating" || ex.type === "paired") {
-      step = ex.steps[setIdx];
-      // Paired exercises inherit side label from the parent (L/R)
-      if (ex.type === "paired" && ex.side) {
-        step = { ...step, side: ex.side };
-      }
-    } else if (ex.type === "timer") {
-      step = { kind: "timer", duration: ex.duration, name: ex.name, hint: ex.hint, side: ex.side };
-    } else if (ex.type === "reps") {
-      step = { kind: "reps", reps: ex.reps, name: ex.name, hint: ex.hint, side: ex.side };
-    }
-
     const base = {
-      day, sectionIdx, exerciseIdx, setIdx,
+      sectionIdx,
+      exerciseIdx,
+      slotIdx,
       paused: false,
-      displayName: step.name,
-      hint: step.hint,
-      side: step.side,
+      name: ex.name,
+      hint: ex.hint,
+      side: ex.kind === "lr" ? (slotIdx === 0 ? "L" : "R") : null,
     };
 
-    if (step.kind === "timer") {
-      setActive({
-        ...base,
-        mode: "timer",
-        remaining: step.duration,
-        total: step.duration,
-      });
+    if (ex.kind === "reps") {
+      setActive({ ...base, mode: "reps", reps: ex.reps });
     } else {
-      setActive({
-        ...base,
-        mode: "reps",
-        reps: step.reps,
-      });
+      setActive({ ...base, mode: "timer", remaining: ex.duration, total: ex.duration });
     }
   };
 
@@ -345,44 +175,25 @@ function StretchApp() {
     setActive((a) => (a ? { ...a, mode: "complete" } : null));
     playBeep(720, 200);
   };
-
   const handleSkipTimer = () => {
     setActive((a) => (a ? { ...a, mode: "complete" } : null));
     playBeep(720, 200);
   };
-
   const handleCompleteDismiss = () => {
-    setStatus(active, "done");
+    markDone(active);
     setActive(null);
   };
-
-  const togglePause = () =>
-    setActive((a) => (a ? { ...a, paused: !a.paused } : null));
-
+  const togglePause = () => setActive((a) => (a ? { ...a, paused: !a.paused } : null));
   const closeTimer = () => setActive(null);
 
-  const resetDay = (d) => {
-    setCompleted((prev) => ({ ...prev, [d]: {} }));
-    setSessionStarts((prev) => ({ ...prev, [d]: null }));
+  const resetAll = () => {
+    setCompleted({});
+    setSessionStart(null);
   };
 
-  const openActionMenu = (sectionIdx, exerciseIdx, setIdx) => {
-    setActionMenu({ day, sectionIdx, exerciseIdx, setIdx });
-  };
-
-  const handleSkip = () => {
-    if (actionMenu) {
-      setStatus(actionMenu, "skipped");
-      setActionMenu(null);
-    }
-  };
-
-  const handleResetSet = () => {
-    if (actionMenu) {
-      clearStatus(actionMenu);
-      setActionMenu(null);
-    }
-  };
+  const elapsed = sessionStart ? Math.floor((now - sessionStart) / 1000) : 0;
+  const total = totalSeconds(showOptional);
+  const hasProgress = Object.keys(completed).length > 0;
 
   return (
     <div
@@ -390,60 +201,109 @@ function StretchApp() {
       style={{
         background: C.bg,
         color: C.text,
-        fontFamily: "'Geist', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif",
+        fontFamily:
+          "'Geist', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif",
         WebkitFontSmoothing: "antialiased",
       }}
     >
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300..700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400&family=Geist:wght@300..700&display=swap');
+        .serif { font-family: 'Fraunces', Georgia, serif; }
         .tabular { font-variant-numeric: tabular-nums; }
-        .grain {
-          background-image: radial-gradient(rgba(31,29,23,0.025) 1px, transparent 1px);
-          background-size: 4px 4px;
-        }
-        @keyframes slideUp {
-          from { transform: translateY(100%); }
-          to { transform: translateY(0); }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes scaleIn {
-          from { transform: scale(0.92); opacity: 0; }
-          to { transform: scale(1); opacity: 1; }
-        }
-        @keyframes softPulse {
-          0%, 100% { opacity: 0.55; }
-          50% { opacity: 1; }
-        }
-        @keyframes gentleSway {
-          0%, 100% { transform: rotate(-4deg); }
-          50% { transform: rotate(4deg); }
-        }
-        @keyframes progressDeplete {
-          from { width: 100%; }
-          to { width: 0%; }
-        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleIn { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes softPulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+        @keyframes progressDeplete { from { width: 100%; } to { width: 0%; } }
       `}</style>
 
-      <WorkoutView
-        day={day}
-        setDay={setDay}
-        completed={completed[day]}
-        onStartSet={startSet}
-        onLongPress={openActionMenu}
-        onResetDay={() => resetDay(day)}
-        sessionStart={sessionStarts[day]}
-        now={now}
-        activeKey={
-          active && active.day === day
-            ? setKey(active.sectionIdx, active.exerciseIdx, active.setIdx)
-            : null
-        }
-      />
+      {/* Slim top bar */}
+      <div
+        style={{
+          background: C.green,
+          color: "#FFFFFF",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "8px 16px",
+          minHeight: "34px",
+          position: "relative",
+        }}
+      >
+        <div
+          className="serif"
+          style={{
+            fontSize: "15px",
+            fontWeight: 500,
+            letterSpacing: "0.04em",
+            lineHeight: 1,
+            fontStyle: "italic",
+          }}
+        >
+          daily fix
+        </div>
+        <SoundToggle soundOn={soundOn} onToggle={() => setSoundOn((s) => !s)} />
+      </div>
 
-      <SoundToggle soundOn={soundOn} onToggle={() => setSoundOn((s) => !s)} />
+      {/* Meta row */}
+      <div className="px-4 pt-3 pb-2 flex items-center gap-3">
+        <div
+          style={{
+            fontSize: "11px",
+            letterSpacing: "0.22em",
+            textTransform: "uppercase",
+            color: C.textFaint,
+            fontWeight: 600,
+            flex: 1,
+            minWidth: 0,
+          }}
+        >
+          Session · ~{Math.round(total / 60)} min
+        </div>
+        <div
+          className="tabular"
+          style={{
+            fontSize: "16px",
+            fontWeight: 500,
+            color: sessionStart ? C.green : C.textFaint,
+            letterSpacing: "-0.01em",
+          }}
+        >
+          {formatTime(elapsed)}
+        </div>
+        {hasProgress && (
+          <button
+            onClick={resetAll}
+            className="rounded-full p-1.5"
+            style={{
+              color: C.textFaint,
+              background: C.cardSoft,
+              border: `1px solid ${C.borderSoft}`,
+            }}
+            aria-label="Reset"
+          >
+            <RotateCcw size={12} />
+          </button>
+        )}
+      </div>
+
+      {/* Sections */}
+      <div className="px-4 pb-24 space-y-4">
+        {routine.map((section, sIdx) => (
+          <Section
+            key={section.id}
+            section={section}
+            sectionIdx={sIdx}
+            completed={completed}
+            showOptional={showOptional}
+            active={active}
+            onStartSlot={startSlot}
+            onLongPress={(sectionIdx, exerciseIdx, slotIdx) =>
+              setActionMenu({ sectionIdx, exerciseIdx, slotIdx })
+            }
+          />
+        ))}
+      </div>
 
       {active && active.mode !== "complete" && (
         <TimerOverlay
@@ -456,11 +316,17 @@ function StretchApp() {
       )}
 
       {actionMenu && !active && (
-        <ActionMenuOverlay
+        <ActionMenu
           menu={actionMenu}
-          completed={completed[actionMenu.day]}
-          onSkip={handleSkip}
-          onReset={handleResetSet}
+          completed={completed}
+          onSkip={() => {
+            markSkipped(actionMenu);
+            setActionMenu(null);
+          }}
+          onReset={() => {
+            clearStatus(actionMenu);
+            setActionMenu(null);
+          }}
           onClose={() => setActionMenu(null)}
         />
       )}
@@ -472,235 +338,59 @@ function StretchApp() {
   );
 }
 
-// ---------- Workout ----------
-function WorkoutView({
-  day, setDay, completed, onStartSet, onLongPress, onResetDay,
-  sessionStart, now, activeKey,
-}) {
-  const r = routines[day];
-  const total = totalSeconds(day);
-  const elapsed = sessionStart ? Math.floor((now - sessionStart) / 1000) : 0;
-  const statuses = Object.values(completed || {});
-  const hasProgress = statuses.length > 0;
+// ---------- Section ----------
+function Section({ section, sectionIdx, completed, showOptional, onStartSlot, onLongPress, active }) {
+  const visible = section.exercises.filter((ex) => showOptional || !ex.optional);
+  if (visible.length === 0) return null;
 
   return (
-    <div className="pb-32 grain">
-      <div className="px-6 pt-10 pb-5">
+    <div>
+      <div
+        className="flex items-baseline gap-3 mb-2 px-1"
+      >
         <div
+          className="serif"
           style={{
-            fontSize: "11px",
-            letterSpacing: "0.3em",
-            textTransform: "uppercase",
-            color: C.textFaint,
+            fontSize: "20px",
             fontWeight: 500,
+            color: C.green,
+            letterSpacing: "-0.01em",
+            fontStyle: "italic",
           }}
         >
-          Daily Practice
+          {section.title}
         </div>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            gap: "16px",
-            marginTop: "6px",
-          }}
-        >
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div
-              style={{
-                fontSize: "44px", fontWeight: 600,
-                letterSpacing: "-0.035em", color: C.green,
-                lineHeight: 1.05,
-              }}
-            >
-              10m Stretch
-            </div>
-          </div>
-          <div
-            style={{
-              flexShrink: 0,
-              width: "68px",
-              height: "68px",
-              borderRadius: "50%",
-              background: C.greenSoft,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              border: `1px solid ${C.green}`,
-            }}
-          >
-            <div
-              style={{
-                animation: "gentleSway 4s ease-in-out infinite",
-                transformOrigin: "bottom center",
-                display: "flex",
-              }}
-            >
-              <Sprout
-                size={34}
-                strokeWidth={1.5}
-                style={{ color: C.green }}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Day toggle */}
-        <div
-          className="flex gap-1 p-0.5 rounded-full mt-5"
-          style={{
-            background: C.cardSoft,
-            border: `1px solid ${C.borderSoft}`,
-            width: "fit-content",
-          }}
-        >
-          {["A", "B"].map((d) => (
-            <button
-              key={d}
-              onClick={() => setDay(d)}
-              className="px-5 py-1.5 rounded-full transition-all"
-              style={{
-                background: day === d ? C.green : "transparent",
-                color: day === d ? C.card : C.textSoft,
-                fontSize: "13px",
-                fontWeight: day === d ? 600 : 500,
-                letterSpacing: "0.02em",
-              }}
-            >
-              Day {d}
-            </button>
-          ))}
-        </div>
-        <div
-          style={{
-            fontSize: "13px", color: C.textSoft,
-            marginTop: "10px", fontWeight: 400,
-            lineHeight: 1.4,
-          }}
-        >
-          {r.accent}
-        </div>
-
-        <div
-          className="flex items-center gap-2 mt-5"
-          style={{ paddingTop: "12px", borderTop: `1px solid ${C.borderSoft}` }}
-        >
-          <span
-            style={{
-              fontSize: "10px",
-              letterSpacing: "0.22em",
-              textTransform: "uppercase",
-              color: C.textFaint,
-              fontWeight: 600,
-            }}
-          >
-            Session
-          </span>
-          <div
-            className="tabular"
-            style={{
-              fontSize: "20px",
-              fontWeight: 500,
-              color: sessionStart ? C.green : C.textFaint,
-              letterSpacing: "-0.02em",
-              marginLeft: "auto",
-            }}
-          >
-            {formatTime(elapsed)}
-          </div>
-          {hasProgress && (
-            <button
-              onClick={onResetDay}
-              className="rounded-full p-1.5"
-              style={{
-                color: C.textFaint,
-                background: C.cardSoft,
-                border: `1px solid ${C.borderSoft}`,
-                marginLeft: "8px",
-              }}
-              aria-label="Reset day"
-            >
-              <RotateCcw size={13} />
-            </button>
-          )}
-        </div>
+        <div style={{ flex: 1, height: "1px", background: C.borderSoft, marginBottom: "4px" }} />
       </div>
 
-      <div className="px-4">
-        {r.sections.map((section, sIdx) => (
-          <div key={sIdx} className="mb-6">
-            <div className="flex items-center gap-3 mb-3 px-1">
-              <span
-                className="tabular"
-                style={{
-                  fontSize: "11px", color: C.textFaint,
-                  letterSpacing: "0.18em", fontWeight: 600,
-                }}
-              >
-                0{sIdx + 1}
-              </span>
-              <div
-                style={{
-                  fontSize: "12px", fontWeight: 600, color: C.text,
-                  letterSpacing: "0.18em", textTransform: "uppercase",
-                }}
-              >
-                {section.title}
-              </div>
-              <div style={{ flex: 1, height: "1px", background: C.borderSoft }} />
-            </div>
-
-            <div
-              className="rounded-2xl overflow-hidden"
-              style={{ background: C.card, border: `1px solid ${C.border}` }}
-            >
-              {section.exercises.map((ex, eIdx) => (
-                <ExerciseRow
-                  key={ex.id}
-                  ex={ex}
-                  isLast={eIdx === section.exercises.length - 1}
-                  completed={completed}
-                  sectionIdx={sIdx}
-                  exerciseIdx={eIdx}
-                  activeKey={activeKey}
-                  onStartSet={onStartSet}
-                  onLongPress={onLongPress}
-                />
-              ))}
-            </div>
-          </div>
-        ))}
-
-        <div
-          style={{
-            fontSize: "11px", color: C.textFaint,
-            textAlign: "center", marginTop: "8px",
-            fontWeight: 400,
-          }}
-        >
-          tap a circle to start · hold for 2s to skip or reset
-        </div>
+      <div
+        className="rounded-2xl overflow-hidden"
+        style={{ background: C.card, border: `1px solid ${C.border}` }}
+      >
+        {visible.map((ex, visIdx) => {
+          const eIdx = section.exercises.indexOf(ex);
+          return (
+            <ExerciseRow
+              key={ex.id}
+              ex={ex}
+              isLast={visIdx === visible.length - 1}
+              sectionIdx={sectionIdx}
+              exerciseIdx={eIdx}
+              completed={completed}
+              onStartSlot={onStartSlot}
+              onLongPress={onLongPress}
+              active={active}
+            />
+          );
+        })}
       </div>
     </div>
   );
 }
 
-function ExerciseRow({
-  ex, isLast, completed, sectionIdx, exerciseIdx,
-  activeKey, onStartSet, onLongPress,
-}) {
-  const slots = exerciseSlots(ex);
-  const isMulti = slots > 1;
-
-  // Inline alternating: render dots on the right side of the row instead of below.
-  // Used for compact alternating exercises (≤4 steps) that fit inline.
-  const isInlineAlternating =
-    ex.type === "alternating" && ex.steps.length <= 4;
-
-  let durationLabel = "";
-  if (ex.type === "timer") durationLabel = `${ex.duration}s`;
-  else if (ex.type === "reps") durationLabel = `${ex.reps}`;
+// ---------- Exercise Row ----------
+function ExerciseRow({ ex, isLast, sectionIdx, exerciseIdx, completed, onStartSlot, onLongPress, active }) {
+  const slots = slotsFor(ex);
 
   return (
     <div
@@ -711,195 +401,90 @@ function ExerciseRow({
         <div style={{ flex: 1, minWidth: 0 }}>
           <div
             style={{
-              fontSize: "16px", fontWeight: 500, color: C.text,
+              fontSize: "16px",
+              fontWeight: 600,
+              color: C.text,
               letterSpacing: "-0.005em",
+              lineHeight: 1.25,
             }}
           >
             {ex.name}
-            {ex.side && (
+            {ex.optional && (
               <span
                 style={{
-                  color: C.green, marginLeft: "8px",
-                  fontSize: "13px", fontWeight: 600,
+                  fontSize: "10px",
+                  color: C.textFaint,
+                  marginLeft: "8px",
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  fontWeight: 600,
                 }}
               >
-                · {ex.side}
+                opt
               </span>
             )}
           </div>
-          {(ex.hint || ex.meta) && (
-            <div
-              style={{
-                fontSize: "12px", color: C.textFaint,
-                marginTop: "3px", fontWeight: 400,
-              }}
-            >
-              {ex.meta || ex.hint}
+          {ex.hint && (
+            <div style={{ fontSize: "12px", color: C.textFaint, marginTop: "2px", lineHeight: 1.3 }}>
+              {ex.hint}
             </div>
           )}
         </div>
 
-        {!isMulti && ex.type !== "alternating" && ex.type !== "paired" && (
-          <SetCircle
-            label={durationLabel}
+        {ex.kind === "lr" ? (
+          <div className="flex gap-2 flex-shrink-0">
+            {[0, 1].map((slotIdx) => (
+              <div
+                key={slotIdx}
+                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}
+              >
+                <BigBadge
+                  label={`${ex.duration}s`}
+                  status={completed[setKey(sectionIdx, exerciseIdx, slotIdx)]}
+                  active={
+                    active &&
+                    active.sectionIdx === sectionIdx &&
+                    active.exerciseIdx === exerciseIdx &&
+                    active.slotIdx === slotIdx
+                  }
+                  onClick={() => onStartSlot(sectionIdx, exerciseIdx, slotIdx)}
+                  onLongPress={() => onLongPress(sectionIdx, exerciseIdx, slotIdx)}
+                />
+                <div
+                  style={{
+                    fontSize: "10px",
+                    color: C.textFaint,
+                    fontWeight: 600,
+                    letterSpacing: "0.1em",
+                    lineHeight: 1,
+                  }}
+                >
+                  {slotIdx === 0 ? "L" : "R"}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <BigBadge
+            label={ex.kind === "timer" ? `${ex.duration}s` : `×${ex.reps}`}
             status={completed[setKey(sectionIdx, exerciseIdx, 0)]}
-            active={activeKey === setKey(sectionIdx, exerciseIdx, 0)}
-            onClick={() => onStartSet(sectionIdx, exerciseIdx, 0)}
+            active={
+              active &&
+              active.sectionIdx === sectionIdx &&
+              active.exerciseIdx === exerciseIdx &&
+              active.slotIdx === 0
+            }
+            onClick={() => onStartSlot(sectionIdx, exerciseIdx, 0)}
             onLongPress={() => onLongPress(sectionIdx, exerciseIdx, 0)}
           />
         )}
-
-        {isInlineAlternating && (
-          <div className="flex gap-2 flex-shrink-0">
-            {ex.steps.map((step, stepIdx) => {
-              const stepLabel = step.kind === "timer" ? `${step.duration}s` : `${step.reps}`;
-              return (
-                <div
-                  key={stepIdx}
-                  style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "5px" }}
-                >
-                  <SetCircle
-                    label={stepLabel}
-                    status={completed[setKey(sectionIdx, exerciseIdx, stepIdx)]}
-                    active={activeKey === setKey(sectionIdx, exerciseIdx, stepIdx)}
-                    onClick={() => onStartSet(sectionIdx, exerciseIdx, stepIdx)}
-                    onLongPress={() => onLongPress(sectionIdx, exerciseIdx, stepIdx)}
-                  />
-                  {step.side && (
-                    <div
-                      style={{
-                        fontSize: "10px",
-                        color: C.textFaint,
-                        fontWeight: 600,
-                        letterSpacing: "0.08em",
-                        lineHeight: 1,
-                        textAlign: "center",
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      {step.side}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {isMulti && ex.type !== "paired" && !isInlineAlternating && (
-          <span
-            className="tabular flex-shrink-0"
-            style={{
-              fontSize: "13px", color: C.textSoft,
-              letterSpacing: "0.02em", fontWeight: 500,
-            }}
-          >
-            {slots} sets
-          </span>
-        )}
-      </div>
-
-      {/* Multi-set dots (below the row) */}
-      {((ex.type === "alternating" && !isInlineAlternating) || ex.type === "paired") ? (
-        <AlternatingDots
-          ex={ex}
-          completed={completed}
-          sectionIdx={sectionIdx}
-          exerciseIdx={exerciseIdx}
-          activeKey={activeKey}
-          onStartSet={onStartSet}
-          onLongPress={onLongPress}
-        />
-      ) : (
-        isMulti && ex.type !== "alternating" && (
-          <div className="flex gap-2.5 mt-3">
-            {Array.from({ length: slots }).map((_, setIdx) => (
-              <SetCircle
-                key={setIdx}
-                label={durationLabel}
-                status={completed[setKey(sectionIdx, exerciseIdx, setIdx)]}
-                active={activeKey === setKey(sectionIdx, exerciseIdx, setIdx)}
-                onClick={() => onStartSet(sectionIdx, exerciseIdx, setIdx)}
-                onLongPress={() => onLongPress(sectionIdx, exerciseIdx, setIdx)}
-              />
-            ))}
-          </div>
-        )
-      )}
-    </div>
-  );
-}
-
-function AlternatingDots({ ex, completed, sectionIdx, exerciseIdx, activeKey, onStartSet, onLongPress }) {
-  const isPaired = ex.type === "paired";
-  return (
-    <div className="mt-3">
-      <div
-        className="flex gap-2 items-center"
-        style={{ justifyContent: isPaired ? "flex-start" : "center" }}
-      >
-        {ex.steps.map((step, stepIdx) => {
-          const stepLabel = step.kind === "timer" ? `${step.duration}s` : `${step.reps}`;
-          const showLabel = isPaired || !!step.side;
-          const subLabel = isPaired ? step.name : step.side;
-          return (
-            <Fragment key={stepIdx}>
-              {isPaired && stepIdx > 0 && (
-                <span
-                  style={{
-                    color: C.textFaint,
-                    fontSize: "16px",
-                    fontWeight: 400,
-                    margin: "0 2px",
-                    lineHeight: 1,
-                  }}
-                  aria-hidden
-                >
-                  →
-                </span>
-              )}
-              {showLabel ? (
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "5px" }}>
-                  <SetCircle
-                    label={stepLabel}
-                    status={completed[setKey(sectionIdx, exerciseIdx, stepIdx)]}
-                    active={activeKey === setKey(sectionIdx, exerciseIdx, stepIdx)}
-                    onClick={() => onStartSet(sectionIdx, exerciseIdx, stepIdx)}
-                    onLongPress={() => onLongPress(sectionIdx, exerciseIdx, stepIdx)}
-                  />
-                  <div
-                    style={{
-                      fontSize: "10px",
-                      color: C.textFaint,
-                      fontWeight: 500,
-                      letterSpacing: "0.06em",
-                      lineHeight: 1.15,
-                      textAlign: "center",
-                      maxWidth: "92px",
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    {subLabel}
-                  </div>
-                </div>
-              ) : (
-                <SetCircle
-                  label={stepLabel}
-                  status={completed[setKey(sectionIdx, exerciseIdx, stepIdx)]}
-                  active={activeKey === setKey(sectionIdx, exerciseIdx, stepIdx)}
-                  onClick={() => onStartSet(sectionIdx, exerciseIdx, stepIdx)}
-                  onLongPress={() => onLongPress(sectionIdx, exerciseIdx, stepIdx)}
-                />
-              )}
-            </Fragment>
-          );
-        })}
       </div>
     </div>
   );
 }
 
-function SetCircle({ status, active, label, onClick, onLongPress }) {
+// ---------- Tappable badge (timer/reps) ----------
+function BigBadge({ label, status, active, onClick, onLongPress }) {
   const [pressing, setPressing] = useState(false);
   const pressTimerRef = useRef(null);
   const firedRef = useRef(false);
@@ -917,40 +502,36 @@ function SetCircle({ status, active, label, onClick, onLongPress }) {
     pressTimerRef.current = setTimeout(() => {
       firedRef.current = true;
       setPressing(false);
-      onLongPress?.();
-    }, 2000);
+      if (onLongPress) onLongPress();
+    }, 1500);
   };
-
   const handlePressEnd = () => {
     setPressing(false);
-    if (pressTimerRef.current) {
-      clearTimeout(pressTimerRef.current);
-      pressTimerRef.current = null;
-    }
+    if (pressTimerRef.current) clearTimeout(pressTimerRef.current);
+    pressTimerRef.current = null;
   };
-
   const handleClick = () => {
     if (firedRef.current) {
       firedRef.current = false;
       return;
     }
-    onClick?.();
+    if (onClick) onClick();
   };
 
   let bg = "transparent";
+  let color = C.text;
   let border = `1.5px solid ${C.border}`;
-  let color = C.textSoft;
-  let content = label != null ? label : "";
+  let content = label;
 
   if (active) {
     bg = C.green;
     border = `1.5px solid ${C.green}`;
-    color = C.card;
+    color = "#FFFFFF";
   } else if (status === "done") {
     bg = C.greenSoft;
     border = `1.5px solid ${C.green}`;
     color = C.green;
-    content = <Check size={16} strokeWidth={2.5} />;
+    content = <Check size={18} strokeWidth={2.8} />;
   } else if (status === "skipped") {
     bg = C.skipped;
     border = `1.5px solid ${C.skippedFaint}`;
@@ -964,18 +545,27 @@ function SetCircle({ status, active, label, onClick, onLongPress }) {
       onPointerUp={handlePressEnd}
       onPointerLeave={handlePressEnd}
       onPointerCancel={handlePressEnd}
-      className="rounded-full flex items-center justify-center tabular"
+      className="rounded-full tabular"
       style={{
-        width: "42px", height: "42px",
-        background: bg, border, color,
-        fontSize: "12px", fontWeight: 600, flexShrink: 0,
+        minWidth: "56px",
+        height: "40px",
+        background: bg,
+        border,
+        color,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: "15px",
+        fontWeight: 600,
         letterSpacing: "-0.01em",
-        transform: pressing ? "scale(1.25)" : "scale(1)",
-        transition: pressing
-          ? "transform 2000ms ease-out, background 200ms ease"
-          : "transform 220ms cubic-bezier(0.32, 0.72, 0, 1), background 200ms ease",
+        padding: "0 14px",
+        flexShrink: 0,
         userSelect: "none",
         touchAction: "manipulation",
+        transform: pressing ? "scale(1.05)" : "scale(1)",
+        transition: pressing
+          ? "transform 1500ms ease-out, background 200ms ease"
+          : "transform 220ms cubic-bezier(0.32, 0.72, 0, 1), background 200ms ease",
       }}
     >
       {content}
@@ -985,25 +575,6 @@ function SetCircle({ status, active, label, onClick, onLongPress }) {
 
 // ---------- Timer Overlay ----------
 function TimerOverlay({ active, onPause, onClose, onRepsDone, onSkipTimer }) {
-  const ex = routines[active.day].sections[active.sectionIdx].exercises[active.exerciseIdx];
-
-  let setLabel;
-  if (ex.type === "alternating") {
-    const currentStep = ex.steps[active.setIdx];
-    let pos = 0, total = 0;
-    ex.steps.forEach((s, i) => {
-      if (s.kind === currentStep.kind) {
-        total++;
-        if (i <= active.setIdx) pos++;
-      }
-    });
-    setLabel = `Set ${pos} of ${total}`;
-  } else if (ex.type === "paired") {
-    setLabel = active.setIdx === 0 ? "Warmup" : "Main stretch";
-  } else if (ex.sets > 1) {
-    setLabel = `Set ${active.setIdx + 1} of ${ex.sets}`;
-  }
-
   const isReps = active.mode === "reps";
   const progress =
     !isReps && active.total > 0
@@ -1013,7 +584,10 @@ function TimerOverlay({ active, onPause, onClose, onRepsDone, onSkipTimer }) {
   return (
     <div
       style={{
-        position: "fixed", bottom: 0, left: 0, right: 0,
+        position: "fixed",
+        bottom: 0,
+        left: 0,
+        right: 0,
         background: C.card,
         borderTop: `1px solid ${C.border}`,
         boxShadow: "0 -8px 32px rgba(31,29,23,0.08)",
@@ -1021,15 +595,12 @@ function TimerOverlay({ active, onPause, onClose, onRepsDone, onSkipTimer }) {
         animation: "slideUp 280ms cubic-bezier(0.32, 0.72, 0, 1)",
       }}
     >
-      <div
-        style={{
-          height: "2px", background: C.borderSoft,
-          position: "relative", overflow: "hidden",
-        }}
-      >
+      <div style={{ height: "2px", background: C.borderSoft, overflow: "hidden" }}>
         <div
           style={{
-            height: "100%", width: `${progress}%`, background: C.green,
+            height: "100%",
+            width: `${progress}%`,
+            background: C.green,
             transition: "width 1000ms linear",
           }}
         />
@@ -1038,41 +609,24 @@ function TimerOverlay({ active, onPause, onClose, onRepsDone, onSkipTimer }) {
       <div className="px-6 pt-4 pb-6">
         <div className="flex items-start justify-between mb-2">
           <div style={{ flex: 1 }}>
-            {setLabel && (
-              <div
-                style={{
-                  fontSize: "11px", color: C.textFaint,
-                  letterSpacing: "0.18em", textTransform: "uppercase",
-                  marginBottom: "5px", fontWeight: 600,
-                }}
-              >
-                {setLabel}
-              </div>
-            )}
             <div
               style={{
-                fontSize: "22px", fontWeight: 600, color: C.text,
-                letterSpacing: "-0.015em", lineHeight: 1.15,
+                fontSize: "22px",
+                fontWeight: 600,
+                color: C.text,
+                lineHeight: 1.15,
+                letterSpacing: "-0.015em",
               }}
             >
-              {active.displayName}
+              {active.name}
               {active.side && (
-                <span
-                  style={{
-                    color: C.green, marginLeft: "8px", fontSize: "18px",
-                  }}
-                >
+                <span style={{ color: C.green, marginLeft: "8px", fontSize: "18px" }}>
                   · {active.side}
                 </span>
               )}
             </div>
             {active.hint && (
-              <div
-                style={{
-                  fontSize: "12px", color: C.textSoft,
-                  marginTop: "4px", fontWeight: 400,
-                }}
-              >
+              <div style={{ fontSize: "12px", color: C.textSoft, marginTop: "4px" }}>
                 {active.hint}
               </div>
             )}
@@ -1092,33 +646,27 @@ function TimerOverlay({ active, onPause, onClose, onRepsDone, onSkipTimer }) {
             <div className="flex items-center justify-between mt-4">
               <div
                 className="tabular"
-                style={{
-                  fontSize: "68px", fontWeight: 300, lineHeight: 1,
-                  letterSpacing: "-0.04em", color: C.text,
-                }}
+                style={{ fontSize: "68px", fontWeight: 300, lineHeight: 1, color: C.text }}
               >
                 {formatTime(active.remaining)}
               </div>
               <button
                 onClick={onPause}
-                className="rounded-full flex items-center justify-center transition-all active:scale-95"
-                style={{
-                  width: "60px", height: "60px",
-                  background: C.green, color: C.card,
-                }}
+                className="rounded-full flex items-center justify-center active:scale-95"
+                style={{ width: "60px", height: "60px", background: C.green, color: "#FFF" }}
                 aria-label={active.paused ? "Resume" : "Pause"}
               >
                 {active.paused ? (
-                  <Play size={24} fill={C.card} style={{ marginLeft: 2 }} />
+                  <Play size={24} fill="#FFF" style={{ marginLeft: 2 }} />
                 ) : (
-                  <Pause size={24} fill={C.card} />
+                  <Pause size={24} fill="#FFF" />
                 )}
               </button>
             </div>
             <div style={{ display: "flex", justifyContent: "center", marginTop: "14px" }}>
               <button
                 onClick={onSkipTimer}
-                className="px-4 py-2 flex items-center gap-2 rounded-full transition-all active:scale-95"
+                className="px-4 py-2 flex items-center gap-2 rounded-full active:scale-95"
                 style={{
                   background: "transparent",
                   border: `1px solid ${C.borderSoft}`,
@@ -1138,10 +686,12 @@ function TimerOverlay({ active, onPause, onClose, onRepsDone, onSkipTimer }) {
           <div className="mt-3">
             <button
               onClick={onRepsDone}
-              className="w-full rounded-xl py-4 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+              className="w-full rounded-xl py-4 flex items-center justify-center gap-2 active:scale-[0.98]"
               style={{
-                background: C.green, color: C.card,
-                fontSize: "15px", fontWeight: 600, letterSpacing: "0.02em",
+                background: C.green,
+                color: "#FFF",
+                fontSize: "15px",
+                fontWeight: 600,
               }}
             >
               <Check size={18} strokeWidth={2.5} />
@@ -1155,102 +705,52 @@ function TimerOverlay({ active, onPause, onClose, onRepsDone, onSkipTimer }) {
 }
 
 // ---------- Action Menu ----------
-function ActionMenuOverlay({ menu, completed, onSkip, onReset, onClose }) {
-  const ex = routines[menu.day].sections[menu.sectionIdx].exercises[menu.exerciseIdx];
-  let setLabel = null;
-  let displayName = ex.name;
-  let side = ex.side;
-
-  if (ex.type === "alternating") {
-    const step = ex.steps[menu.setIdx];
-    displayName = step.name;
-    let pos = 0, total = 0;
-    ex.steps.forEach((s, i) => {
-      if (s.kind === step.kind) {
-        total++;
-        if (i <= menu.setIdx) pos++;
-      }
-    });
-    setLabel = `Set ${pos} of ${total}`;
-  } else if (ex.type === "paired") {
-    const step = ex.steps[menu.setIdx];
-    displayName = step.name;
-    setLabel = menu.setIdx === 0 ? "Warmup" : "Main stretch";
-  } else if (ex.sets > 1) {
-    setLabel = `Set ${menu.setIdx + 1} of ${ex.sets}`;
-  }
-
-  const k = setKey(menu.sectionIdx, menu.exerciseIdx, menu.setIdx);
+function ActionMenu({ menu, completed, onSkip, onReset, onClose }) {
+  const ex = routine[menu.sectionIdx].exercises[menu.exerciseIdx];
+  const k = setKey(menu.sectionIdx, menu.exerciseIdx, menu.slotIdx);
   const status = completed[k];
   const isEmpty = !status;
+  const side = ex.kind === "lr" ? (menu.slotIdx === 0 ? "L" : "R") : null;
 
   return (
-    <div
-      style={{
-        position: "fixed", inset: 0, zIndex: 60,
-        animation: "fadeIn 180ms ease-out",
-      }}
-    >
+    <div style={{ position: "fixed", inset: 0, zIndex: 60, animation: "fadeIn 180ms ease-out" }}>
       <div
         onClick={onClose}
-        style={{
-          position: "absolute", inset: 0,
-          background: "rgba(31,29,23,0.4)",
-        }}
+        style={{ position: "absolute", inset: 0, background: "rgba(31,29,23,0.4)" }}
       />
       <div
         style={{
-          position: "absolute", bottom: 0, left: 0, right: 0,
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
           background: C.card,
           borderTop: `1px solid ${C.border}`,
           borderRadius: "20px 20px 0 0",
-          boxShadow: "0 -8px 32px rgba(31,29,23,0.12)",
           animation: "slideUp 280ms cubic-bezier(0.32, 0.72, 0, 1)",
         }}
       >
         <div
           style={{
-            width: "36px", height: "4px", background: C.border,
-            borderRadius: "2px", margin: "10px auto 4px",
+            width: "36px",
+            height: "4px",
+            background: C.border,
+            borderRadius: "2px",
+            margin: "10px auto 4px",
           }}
         />
         <div className="px-6 pt-3 pb-2">
-          {setLabel && (
-            <div
-              style={{
-                fontSize: "11px", color: C.textFaint,
-                letterSpacing: "0.18em", textTransform: "uppercase",
-                marginBottom: "4px", fontWeight: 600,
-              }}
-            >
-              {setLabel}
-            </div>
-          )}
-          <div
-            style={{
-              fontSize: "20px", fontWeight: 600, color: C.text,
-              letterSpacing: "-0.01em", lineHeight: 1.2,
-            }}
-          >
-            {displayName}
+          <div style={{ fontSize: "20px", fontWeight: 600, color: C.text }}>
+            {ex.name}
             {side && (
               <span style={{ color: C.green, marginLeft: "8px", fontSize: "16px" }}>
                 · {side}
               </span>
             )}
           </div>
-          <div
-            style={{
-              fontSize: "12px", color: C.textSoft,
-              marginTop: "4px", fontWeight: 400,
-            }}
-          >
+          <div style={{ fontSize: "12px", color: C.textSoft, marginTop: "4px" }}>
             currently{" "}
-            {status === "done"
-              ? "marked complete"
-              : status === "skipped"
-              ? "marked skipped"
-              : "not started"}
+            {status === "done" ? "marked complete" : status === "skipped" ? "marked skipped" : "not started"}
           </div>
         </div>
 
@@ -1274,12 +774,13 @@ function ActionMenuOverlay({ menu, completed, onSkip, onReset, onClose }) {
         <div className="px-4 pb-6">
           <button
             onClick={onClose}
-            className="w-full rounded-xl py-3 transition-all active:scale-[0.98]"
+            className="w-full rounded-xl py-3 active:scale-[0.98]"
             style={{
               background: "transparent",
               border: `1px solid ${C.border}`,
               color: C.textSoft,
-              fontSize: "14px", fontWeight: 500, letterSpacing: "0.02em",
+              fontSize: "14px",
+              fontWeight: 500,
             }}
           >
             Cancel
@@ -1295,7 +796,7 @@ function ActionButton({ icon, label, sub, onClick, disabled }) {
     <button
       onClick={onClick}
       disabled={disabled}
-      className="w-full rounded-xl px-4 py-3 flex items-center gap-4 transition-all active:scale-[0.98]"
+      className="w-full rounded-xl px-4 py-3 flex items-center gap-4 active:scale-[0.98]"
       style={{
         background: C.cardSoft,
         border: `1px solid ${C.borderSoft}`,
@@ -1306,30 +807,13 @@ function ActionButton({ icon, label, sub, onClick, disabled }) {
     >
       <div
         className="rounded-full flex items-center justify-center flex-shrink-0"
-        style={{
-          width: "40px", height: "40px",
-          background: C.greenSoft, color: C.green,
-        }}
+        style={{ width: "40px", height: "40px", background: C.greenSoft, color: C.green }}
       >
         {icon}
       </div>
       <div style={{ flex: 1 }}>
-        <div
-          style={{
-            fontSize: "15px", fontWeight: 600, color: C.text,
-            letterSpacing: "-0.005em",
-          }}
-        >
-          {label}
-        </div>
-        <div
-          style={{
-            fontSize: "12px", color: C.textSoft,
-            marginTop: "1px", fontWeight: 400,
-          }}
-        >
-          {sub}
-        </div>
+        <div style={{ fontSize: "15px", fontWeight: 600, color: C.text }}>{label}</div>
+        <div style={{ fontSize: "12px", color: C.textSoft, marginTop: "1px" }}>{sub}</div>
       </div>
     </button>
   );
@@ -1340,40 +824,35 @@ function SoundToggle({ soundOn, onToggle }) {
   return (
     <button
       onClick={onToggle}
-      aria-label={soundOn ? "Mute sound" : "Unmute sound"}
+      aria-label={soundOn ? "Mute" : "Unmute"}
       style={{
-        position: "fixed",
-        top: "12px",
+        position: "absolute",
+        top: "50%",
         right: "12px",
-        width: "40px",
-        height: "40px",
-        borderRadius: "50%",
-        background: C.cardSoft,
-        border: `1px solid ${C.borderSoft}`,
-        color: C.textSoft,
+        transform: "translateY(-50%)",
+        width: "28px",
+        height: "28px",
+        background: "transparent",
+        border: "none",
+        color: "#FFFFFF",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        zIndex: 55,
         cursor: "pointer",
       }}
     >
       <div style={{ position: "relative", display: "inline-flex" }}>
-        <Volume2
-          size={18}
-          strokeWidth={2}
-          style={{ opacity: soundOn ? 1 : 0.45 }}
-        />
+        <Volume2 size={16} strokeWidth={2} style={{ opacity: soundOn ? 1 : 0.5 }} />
         {!soundOn && (
           <X
-            size={22}
+            size={20}
             strokeWidth={2.6}
             style={{
               position: "absolute",
               top: "50%",
               left: "50%",
               transform: "translate(-50%, -50%)",
-              color: C.text,
+              color: "#FFFFFF",
             }}
           />
         )}
@@ -1388,9 +867,7 @@ function CompleteOverlay({ onTap }) {
   onTapRef.current = onTap;
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      onTapRef.current();
-    }, 10000);
+    const t = setTimeout(() => onTapRef.current(), 10000);
     return () => clearTimeout(t);
   }, []);
 
@@ -1398,10 +875,14 @@ function CompleteOverlay({ onTap }) {
     <div
       onClick={onTap}
       style={{
-        position: "fixed", inset: 0, background: C.green,
+        position: "fixed",
+        inset: 0,
+        background: C.green,
         zIndex: 100,
-        display: "flex", flexDirection: "column",
-        alignItems: "center", justifyContent: "center",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
         cursor: "pointer",
         animation: "fadeIn 220ms ease-out",
       }}
@@ -1409,7 +890,9 @@ function CompleteOverlay({ onTap }) {
       <div
         style={{
           position: "absolute",
-          top: 0, left: 0, right: 0,
+          top: 0,
+          left: 0,
+          right: 0,
           height: "2px",
           background: "rgba(255,255,255,0.15)",
           overflow: "hidden",
@@ -1426,28 +909,23 @@ function CompleteOverlay({ onTap }) {
       </div>
       <div
         style={{
-          textAlign: "center", color: "#FFFFFF",
+          textAlign: "center",
+          color: "#FFFFFF",
           animation: "scaleIn 320ms cubic-bezier(0.32, 0.72, 0, 1)",
         }}
       >
-        <Check
-          size={64}
-          strokeWidth={2.5}
-          style={{ margin: "0 auto", marginBottom: "20px", opacity: 0.95 }}
-        />
-        <div
-          style={{
-            fontSize: "72px", fontWeight: 600,
-            letterSpacing: "-0.04em", lineHeight: 1,
-          }}
-        >
+        <Check size={64} strokeWidth={2.5} style={{ margin: "0 auto", marginBottom: "20px" }} />
+        <div className="serif" style={{ fontSize: "72px", fontWeight: 500, lineHeight: 1, fontStyle: "italic" }}>
           complete
         </div>
         <div
           style={{
-            fontSize: "12px", marginTop: "28px",
-            letterSpacing: "0.25em", textTransform: "uppercase",
-            fontWeight: 500, animation: "softPulse 2s ease-in-out infinite",
+            fontSize: "12px",
+            marginTop: "28px",
+            letterSpacing: "0.25em",
+            textTransform: "uppercase",
+            fontWeight: 500,
+            animation: "softPulse 2s ease-in-out infinite",
           }}
         >
           tap to continue
@@ -1456,10 +934,3 @@ function CompleteOverlay({ onTap }) {
     </div>
   );
 }
-
-
-    const root = ReactDOM.createRoot(document.getElementById("root"));
-    root.render(<StretchApp />);
-  </script>
-</body>
-</html>
